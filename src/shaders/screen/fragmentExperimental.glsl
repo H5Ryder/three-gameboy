@@ -49,7 +49,6 @@ void main() {
 
     // In the case the light bar isn't on allow a faint bit of color 
     vec4 offHue = vec4(0.1);
-  
     vec4 intensity = step(1.0, textureColor*uBrightness)*textureColor*uBrightness + offHue;
 
     gl_FragColor = vec4(redOn*intensity.r, greenOn*intensity.g, blueOn*intensity.b, 1.0);
