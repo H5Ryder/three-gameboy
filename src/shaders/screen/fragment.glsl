@@ -2,8 +2,12 @@ varying vec2 vUv;
 uniform sampler2D uPictureTexture;
 uniform float uRows;
 uniform float uColumns;
-uniform float uOffset;
+uniform float uBarHeight;
+uniform float uBrightness;
 uniform float uTime;
+uniform float uBarWidth;
+uniform float uThreshold;
+uniform float uBarWidthGap;
 
 vec2 curveRemapUV(vec2 uv) {
     // as we near the edge of our screen apply greater distortion using a cubic function
@@ -16,27 +20,40 @@ vec2 curveRemapUV(vec2 uv) {
 
 void main() {
 
-    //float lightIntensity = sin(vUv.x*1200.0);
-    //vec3 black = vec3(0.0, 0.0, 0.0);
-    //vec3 finalColor = mix(baseColor.rgb, black, lightIntensity);
+    // Cycles through 0.0 - 1.0 uColumns number of times (e.g. uColumns = 30.0 then we have 30 columns)
+    float remainderX = mod(vUv.x * uColumns, 1.0);
+    // Cycles through 0.0 - 1.0 uColumns/2 number of times (e.g. uColumns = 30.0 then we have 15 columns, why? So that for every other column, we can add a offset)
+    float remainder2X = mod(vUv.x * uColumns * 0.5, 1.0);
+    // Cycles through 0.0 - 1.0 uRows number of times, so we can set the number of light rows (e.g. uRows = 30.0 then 30 lights fit vertically)
+    float remainderY = mod((vUv.y + step(0.5, remainder2X) * 1.0/uRows * 0.5) * uRows, 1.0);
+    //+ step(0.5, remainder2X) * 0.05 <- Add back above for offset
 
-    float remainderX = mod(vUv.x * uRows, 1.0);
-    float remainder2X = mod(vUv.x * uRows * 0.5, 1.0);
-    float remainderY = mod((vUv.y + step(0.5, remainder2X) * 0.05) * 30.0, 1.0);
+    //Either 0.0 or 1.0 (Binary) - Sets light color to 0.0 if we are on a gap (dark part of the screen were there are no pixels/lights)
+    //uBarHeight sets the % height the lights take up (e.g. uBarHeight = 0.5 then 50% of each row is light and 50% is dark space)
+    float verticalLEDHeight = uBarHeight; // % thats LED
+    float verticalLEDGap = (1.0 - verticalLEDHeight)/2.0; // % gap above and bellow LED
+    float verticalLightSwitch = step(verticalLEDGap, remainderY) - step(verticalLEDGap + verticalLEDHeight, remainderY);
 
-    float strength = step(0.5, remainderY);
+    // Calculates the width of the light bars   
+    float XMargin = (1.0 - (3.0 * uBarWidth + 2.0 * uBarWidthGap))/2.0;
 
-    float red = step(0.17, remainderX) - step(0.34, remainderX);
-    float green = step(0.51, remainderX) - step(0.66, remainderX);
-    float blue = step(0.83, remainderX) - step(1.0, remainderX);
+    //Calculates if the location on the plane would contain red,green or blue pixel or no pixel at all, returns either 0.0 or 1.0 (Binary)
+    float redOn = (step(XMargin, remainderX) - step(XMargin + uBarWidth, remainderX))*verticalLightSwitch;
+    float greenOn = (step(XMargin + uBarWidth + uBarWidthGap, remainderX) - step(XMargin + 2.0 * uBarWidth + uBarWidthGap, remainderX))*verticalLightSwitch;
+    float blueOn = (step(XMargin + 2.0 * uBarWidth + 2.0 * uBarWidthGap, remainderX) - step(XMargin + 3.0 * uBarWidth + 2.0 * uBarWidthGap, remainderX))*verticalLightSwitch;
 
-    vec4 textureColor = texture2D(uPictureTexture, vUv);
-    vec4 textureColorTop = texture2D(uPictureTexture, vec2(vUv.x, vUv.y - (1.0/30.0)*(remainderY)));
-    vec4 textureColorBottom = texture2D(uPictureTexture, vec2(vUv.x, vUv.y + (1.0/30.0)*(1.0 - remainderY)));
-    textureColor = (textureColorTop + textureColorBottom)/2.0;
-//red * strength*textureColor.r
-    gl_FragColor = vec4(red * strength * textureColor.r, green * strength * textureColor.g, blue * strength * textureColor.b, 1.0);
 
-//     gl_FragColor = textureColor;
+    float ledWidth = 1.0/uColumns;
+    float ledHeight = (1.0/uRows);
+
+    //TextureColor has the rgb values of the original image texture
+    vec2 averagevUv = vec2(vUv.x + (0.5 - remainderX)*ledWidth, vUv.y + (0.5 - remainderY)*(ledHeight));
+    vec4 textureColor = texture2D(uPictureTexture, averagevUv);
+   
+    // In the case the light bar isn't on allow a faint bit of color 
+    vec4 offHue = vec4(0.008);
+    vec4 intensity = step(uThreshold, textureColor*uBrightness)*textureColor*uBrightness + offHue;
+
+    gl_FragColor = vec4(redOn*intensity.r, greenOn*intensity.g, blueOn*intensity.b, 1.0);
 
 }

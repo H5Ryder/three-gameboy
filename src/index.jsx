@@ -21,8 +21,6 @@ root.render(
     }}
   >
     <Experience />
-    <EffectComposer>
-      <Bloom mipmapBlur intensity={1.0} luminanceThreshold={1.0} />
-    </EffectComposer>
+  
   </Canvas>
 );

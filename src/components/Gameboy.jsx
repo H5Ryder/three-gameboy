@@ -16,17 +16,20 @@ import * as THREE from "three";
 import { useControls } from "leva";
 
 import screenVertexShader from "../shaders/screen/vertex.glsl";
-import screenFragmentShader from "../shaders/screen/fragmentExperimental.glsl";
+import screenFragmentShader from "../shaders/screen/fragment.glsl";
 
 const ScreenMaterial = shaderMaterial(
   {
     uPictureTexture: null,
-    uRows: 40,
-    uColumns: 90.0,
-    uBarHeight: 0.11,
+    uRows: 358,
+    uColumns: 357,
+    uBarHeight: 0.30,
     uTime: 0,
-    uBrightness: 0.65,
-    uBarWidth: 0.06,
+    uBrightness: 1.49,
+    uBarWidth: 0.05,
+    uBarWidthGap: 0.05,
+    uThreshold: 0.59,
+    
   },
   screenVertexShader,
   screenFragmentShader
@@ -37,42 +40,54 @@ extend({ ScreenMaterial });
 export default function Gameboy({ colors, posX, posY, posZ }) {
   const { nodes, materials } = useGLTF("model/gameboy.glb");
   const shaderRef = useRef();
-  const texture = useLoader(TextureLoader, "screen.png");
+  const texture = useLoader(TextureLoader, "game.png");
 
   /**
    * Controls
    */
-  const { uRows, uColumns, uBarHeight, uBrightness, uBarWidth } = useControls(
+  const { uRows, uColumns, uBarHeight, uBrightness, uBarWidth, uThreshold,uBarWidthGap } = useControls(
     "Shader",
     {
       uRows: {
-        value: 40,
+        value: 358,
         min: 0,
-        max: 128,
+        max: 600,
         step: 1,
       },
       uColumns: {
-        value: 90,
+        value: 357,
         min: 1,
-        max: 128,
+        max: 600,
         step: 1,
       },
       uBarHeight: {
-        value: 0.11,
+        value: 0.80,
         min: 0,
         max: 1,
         step: 0.01,
       },
+      uBarWidth: {
+        value: 0.25,
+        min: 0,
+        max: 0.5,
+        step: 0.01,
+      },
+      uBarWidthGap: {
+        value: 0.05,
+        min: 0,
+        max: 0.3,
+        step: 0.01,
+      },
       uBrightness: {
-        value: 0.65,
+        value: 1.49,
         min: 0,
         max: 5.0,
         step: 0.001,
       },
-      uBarWidth: {
-        value: 0.06,
+      uThreshold: {
+        value: 0.59,
         min: 0,
-        max: 5.0,
+        max: 10.0,
         step: 0.01,
       },
     }
@@ -234,6 +249,9 @@ export default function Gameboy({ colors, posX, posY, posZ }) {
     shaderRef.current.uBarHeight = uBarHeight;
     shaderRef.current.uBrightness = uBrightness;
     shaderRef.current.uBarWidth = uBarWidth;
+    shaderRef.current.uBarWidthGap = uBarWidthGap;
+    shaderRef.current.uThreshold = uThreshold;
+    shaderRef.current.uTime += delta;
   });
 
   /**
