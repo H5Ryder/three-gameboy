@@ -1,4 +1,4 @@
-import { useTexture, OrbitControls, useGLTF } from "@react-three/drei";
+import { useTexture, OrbitControls, useGLTF, Environment,Stage } from "@react-three/drei";
 import { Canvas, useLoader } from "react-three-fiber";
 import { TextureLoader } from "three";
 import { useControls } from "leva";
@@ -6,7 +6,7 @@ import {
   ToneMapping,
   EffectComposer,
   Bloom,
-  Scanline
+  Scanline,
 } from "@react-three/postprocessing";
 import { ToneMappingMode } from "postprocessing";
 
@@ -21,7 +21,7 @@ export default function Experience() {
     buttons_ab,
     dPad,
     buttons_selStart,
-    bloomIntensity,
+    luminanceThreshold,
   } = useControls("General", {
     posX: {
       value: -1.97,
@@ -41,8 +41,8 @@ export default function Experience() {
       max: 4,
       step: 0.01,
     },
-    bloomIntensity: {
-      value: 0.5,
+    luminanceThreshold: {
+      value: 3.61,
       min: -4,
       max: 10,
       step: 0.01,
@@ -58,16 +58,19 @@ export default function Experience() {
   return (
     <>
       <EffectComposer>
-        <Bloom mipmapBlur intensity={1.0} luminanceThreshold={bloomIntensity} />
-      
+        <Bloom mipmapBlur intensity={10.0} luminanceThreshold={luminanceThreshold} />
+        <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
       </EffectComposer>
 
-      <color args={["#202020"]} attach="background" />
+      <color args={["#fffff"]} attach="background" />
+
       <OrbitControls makeDefault />
-      <directionalLight castShadow position={[1, 2, 3]} intensity={1.5} />
-      <ambientLight intensity={0.5} />
-      <axesHelper args={[2, 2, 2]} />
+      
+
       <Gameboy {...{ colors, posX, posY, posZ }} />
+  
+     
+
     </>
   );
 }
